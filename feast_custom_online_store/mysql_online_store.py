@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Sequence, Union, List, Optional, Tuple, Dict, Callable, Any
 
 import pytz
-from feast import RepoConfig, FeatureTable, FeatureView, Entity
+from feast import RepoConfig, FeatureView, Entity
 from feast.infra.key_encoding_utils import serialize_entity_key
 from feast.infra.online_stores.online_store import OnlineStore
 from feast.protos.feast.types.EntityKey_pb2 import EntityKey as EntityKeyProto
@@ -13,7 +13,7 @@ from mysql import connector
 from feast.repo_config import FeastConfigBaseModel
 from mysql.connector.abstracts import MySQLConnectionAbstract
 from pydantic import StrictStr
-from pydantic.typing import Literal
+from typing import Literal
 
 
 class MySQLOnlineStoreConfig(FeastConfigBaseModel):
@@ -29,6 +29,7 @@ class MySQLOnlineStoreConfig(FeastConfigBaseModel):
     user: Optional[StrictStr] = None
     password: Optional[StrictStr] = None
     database: Optional[StrictStr] = None
+    port: Optional[int] = None
 
 
 class MySQLOnlineStore(OnlineStore):
@@ -50,6 +51,7 @@ class MySQLOnlineStore(OnlineStore):
                 user=online_store_config.user or "root",
                 password=online_store_config.password,
                 database=online_store_config.database or "feast",
+                port=online_store_config.port or 3306,
                 autocommit=True
             )
         return self._conn
@@ -57,7 +59,7 @@ class MySQLOnlineStore(OnlineStore):
     def online_write_batch(
             self,
             config: RepoConfig,
-            table: Union[FeatureTable, FeatureView],
+            table: Union[FeatureView],
             data: List[
                 Tuple[EntityKeyProto, Dict[str, ValueProto], datetime, Optional[datetime]]
             ],
@@ -115,7 +117,7 @@ class MySQLOnlineStore(OnlineStore):
     def online_read(
             self,
             config: RepoConfig,
-            table: Union[FeatureTable, FeatureView],
+            table: Union[FeatureView],
             entity_keys: List[EntityKeyProto],
             requested_features: Optional[List[str]] = None,
     ) -> List[Tuple[Optional[datetime], Optional[Dict[str, ValueProto]]]]:
@@ -150,8 +152,8 @@ class MySQLOnlineStore(OnlineStore):
     def update(
             self,
             config: RepoConfig,
-            tables_to_delete: Sequence[Union[FeatureTable, FeatureView]],
-            tables_to_keep: Sequence[Union[FeatureTable, FeatureView]],
+            tables_to_delete: Sequence[Union[FeatureView]],
+            tables_to_keep: Sequence[Union[FeatureView]],
             entities_to_delete: Sequence[Entity],
             entities_to_keep: Sequence[Entity],
             partial: bool,
@@ -179,7 +181,7 @@ class MySQLOnlineStore(OnlineStore):
     def teardown(
             self,
             config: RepoConfig,
-            tables: Sequence[Union[FeatureTable, FeatureView]],
+            tables: Sequence[Union[FeatureView]],
             entities: Sequence[Entity],
     ):
         conn = self._get_conn(config)
@@ -193,7 +195,7 @@ class MySQLOnlineStore(OnlineStore):
             cur.execute(f"DROP TABLE IF EXISTS {_table_id(project, table)}")
 
 
-def _table_id(project: str, table: Union[FeatureTable, FeatureView]) -> str:
+def _table_id(project: str, table: Union[FeatureView]) -> str:
     return f"{project}_{table.name}"
 
 

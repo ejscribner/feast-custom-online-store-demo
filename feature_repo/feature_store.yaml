@@ -3,3 +3,9 @@ registry: data/registry.db
 provider: local
 online_store:
   type: feast_custom_online_store.mysql_online_store.MySQLOnlineStore
+  host: 127.0.0.1  # MySQL host
+  port: 3333  # MySQL port
+  user: root  # MySQL username
+  password: root  # MySQL password
+  database: feast  # MySQL database name
+entity_key_serialization_version: 2
